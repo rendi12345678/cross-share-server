@@ -1,7 +1,12 @@
 require("dotenv").config();
+const express = require("express");
+const app = express();
 const { google } = require("googleapis");
+const bodyParser = require("body-parser");
 const fs = require("fs");
 const { client_id, client_secret, redirect_uris } = process.env;
+
+app.use(bodyParser.json());
 
 // Load credentials from a JSON file
 const credentials = {
@@ -44,17 +49,31 @@ const videoPath = "./assets/videos/pipres-demo.mp4";
 
 console.log(`Uploading video...`);
 
-const uploadVideoToYoutube = async (video) => {
+const uploadVideoToYoutube = async (accessToken, video) => {
   try {
-    const res = await youtube.videos.insert({
+    const response = await youtube.videos.insert({
       part: "snippet,status",
       requestBody: videoMetadata,
       media: {
         body: fs.createReadStream(videoPath),
       },
     });
-    console.log("Video uploaded successfully:", res.data);
+
+    console.log("Video uploaded successfully:", response.data);
+    return response.data;
   } catch (err) {
     console.error("Error uploading video:", err);
+    throw err;
   }
 };
+
+app.post("/upload-video", async (req, res) => {
+  const { accessToken } = req.body;
+  try {
+    const data = await uploadVideoToYoutube(accessToken, video);
+    res.json({ message: `Video uploaded successfully: ${data}` });
+  } catch (err) {
+    console.error(err);
+    res.json({ message: `Error uploadind video: ${err}` });
+  }
+});
