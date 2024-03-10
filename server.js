@@ -1,9 +1,7 @@
+require("dotenv").config();
 const { google } = require("googleapis");
 const fs = require("fs");
-const client_id =
-  "64320919863-41lrv84v3mth32m8injfd9macgbdjah1.apps.googleusercontent.com";
-const client_secret = "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";
-const redirect_uris = "http://localhost:3000/";
+const { client_id, client_secret, redirect_uris } = process.env;
 
 // Load credentials from a JSON file
 const credentials = {
