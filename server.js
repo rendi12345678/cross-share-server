@@ -5,8 +5,27 @@ const { google } = require("googleapis");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const { client_id, client_secret, redirect_uris } = process.env;
+const multer = require("multer");
+const cors = require("cors");
+const PORT = 5000;
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./assets/uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } });
 app.use(bodyParser.json());
+app.use(
+  cors({
+    origin: "*",
+    crendentials: true,
+  })
+);
 
 // Load credentials from a JSON file
 const credentials = {
@@ -21,11 +40,6 @@ const oauth2Client = new google.auth.OAuth2(
   credentials.client_secret,
   credentials.redirect_uris[0]
 );
-
-// Define video file path
-const videoPath = "./assets/videos/pipres-demo.mp4";
-
-console.log(`Uploading video...`);
 
 const uploadVideoToYoutube = async (
   accessToken,
@@ -68,20 +82,29 @@ const uploadVideoToYoutube = async (
   }
 };
 
-app.post("/upload-video", async (req, res) => {
-  const { accessToken, title, description, privacyStatus } = req.body;
-  const videoData = {
-    title,
-    description,
-    privacyStatus,
-    videoPath,
-  };
-
-  try {
-    const data = await uploadVideoToYoutube(accessToken, videoData);
-    res.json({ message: `Video uploaded successfully: ${data}` });
-  } catch (err) {
-    console.error(err);
-    res.json({ message: `Error uploading video: ${err}` });
+app.post(
+  "/upload-youtube-video",
+  upload.single("youtubeVideo"),
+  async (req, res) => {
+    res.json({ message: "success" });
+    // const { accessToken, title, description } = req.body;
+    // const videoData = {
+    //   title,
+    //   description,
+    //   privacyStatus: "public",
+    //   videoPath: "",
+    // };
+    // try {
+    //   const data = await uploadVideoToYoutube(accessToken, videoData);
+    //   console.log(`Value Data : ${data}`);
+    //   res.json({ message: `Video uploaded successfully: ${data}` });
+    // } catch (err) {
+    //   console.error(err.message);
+    //   res.json({ message: `Error uploading video: ${err.message}` });
+    // }
   }
+);
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
