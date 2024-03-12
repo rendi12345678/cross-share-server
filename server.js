@@ -86,22 +86,28 @@ app.post(
   "/upload-youtube-video",
   upload.single("youtubeVideo"),
   async (req, res) => {
-    res.json({ message: "success" });
-    // const { accessToken, title, description } = req.body;
-    // const videoData = {
-    //   title,
-    //   description,
-    //   privacyStatus: "public",
-    //   videoPath: "",
-    // };
-    // try {
-    //   const data = await uploadVideoToYoutube(accessToken, videoData);
-    //   console.log(`Value Data : ${data}`);
-    //   res.json({ message: `Video uploaded successfully: ${data}` });
-    // } catch (err) {
-    //   console.error(err.message);
-    //   res.json({ message: `Error uploading video: ${err.message}` });
-    // }
+    const { accessToken, title, description } = req.body;
+    const videoMetadata = {
+      title,
+      description,
+      privacyStatus: "public",
+      videoPath: req.file.path,
+    };
+
+    try {
+      const data = await uploadVideoToYoutube(accessToken, videoMetadata);
+      console.log(`Value Data : ${data}`);
+      res.json({
+        message: `Video uploaded successfully: ${data}`,
+        success: true,
+      });
+    } catch (err) {
+      console.error(err.message);
+      res.json({
+        message: `Error uploading video: ${err.message}`,
+        success: false,
+      });
+    }
   }
 );
 
