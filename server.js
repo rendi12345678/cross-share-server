@@ -23,7 +23,7 @@ app.use(bodyParser.json());
 app.use(
   cors({
     origin: "*",
-    crendentials: true,
+    credentials: true,
   })
 );
 
@@ -66,6 +66,7 @@ const uploadVideoToYoutube = async (
   });
 
   try {
+    console.log(`Uploading video`);
     const response = await youtube.videos.insert({
       part: "snippet,status",
       requestBody: videoMetadata,
@@ -82,11 +83,51 @@ const uploadVideoToYoutube = async (
   }
 };
 
+const getToken = async (code) => {
+  const { tokens } = await oauth2Client.getToken(code);
+  return tokens.access_token;
+};
+
+app.get("/auth/google", (req, res) => {
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["https://www.googleapis.com/auth/youtube"],
+  });
+  
+  res.redirect(authUrl);
+});
+
+app.get("/oauth2callback", async (req, res) => {
+  const code = req.query.code;
+  try {
+    const accessToken = await getToken(code);
+    res.json({ accessToken });
+  } catch (error) {
+    console.error("Failed to obtain access token:", error);
+    res.status(500).json({ message: "Failed to obtain access token" });
+  }
+});
+
 app.post(
   "/upload-youtube-video",
   upload.single("youtubeVideo"),
   async (req, res) => {
     const { accessToken, title, description } = req.body;
+
+    // Pastikan accessToken telah diberikan
+    if (!accessToken) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Access token is required" });
+    }
+
+    // Pastikan file video telah diunggah
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Video file is required" });
+    }
+
     const videoMetadata = {
       title,
       description,
@@ -103,7 +144,7 @@ app.post(
       });
     } catch (err) {
       console.error(err.message);
-      res.json({
+      res.status(500).json({
         message: `Error uploading video: ${err.message}`,
         success: false,
       });
